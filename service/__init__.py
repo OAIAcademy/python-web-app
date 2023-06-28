@@ -1,0 +1,1 @@
+from service.endpoints import app as flask_app
