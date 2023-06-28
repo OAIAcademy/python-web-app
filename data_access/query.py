@@ -11,7 +11,7 @@ def get_connection():
         database=os.environ.get("DB_NAME"))
 
 
-def get_country_data(country_code: str, year: int):
+def get_country_data(country_code: str, year: int) -> pd.DataFrame:
     with get_connection() as conn:
         return pd.read_sql('''select i.indicator_code,r.indicator_value,i.short_definition,i.long_definition
                                 from records as r
@@ -21,7 +21,7 @@ def get_country_data(country_code: str, year: int):
                            conn, params={'country_code': country_code, "year": year})
 
 
-def get_indicator_average(indicator_code: str, year: int):
+def get_indicator_average(indicator_code: str, year: int) -> str:
     with get_connection() as conn:
         with conn.cursor() as cursor:
             cursor.execute('''select r.indicator_code, avg(r.indicator_value)
@@ -30,3 +30,21 @@ def get_indicator_average(indicator_code: str, year: int):
                                   group by r.indicator_code''',
                            {'country_code': indicator_code, "year": year})
             return str(cursor.fetchone()[1])
+
+
+def get_country_average(indicator_code: str, country_code: int, year_from: int, year_to: int) -> str:
+    with get_connection() as conn:
+        with conn.cursor() as cursor:
+            cursor.execute('''select avg(r.indicator_value)
+                              from records as r
+                              where r.indicator_code = %(indicator_code)s 
+                                    and r.country_code=%(country_code)s
+                                    and r.year >= %(year_from)s
+                                    and r.year <= %(year_to)s
+                              group by r.indicator_code,r.country_code''',
+                           {'indicator_code': indicator_code,
+                            "country_code": country_code,
+                            'year_from': year_from,
+                            'year_to': year_to
+                            })
+            return str(cursor.fetchone()[0])
